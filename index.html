@@ -252,32 +252,37 @@
             color: white;
         }
 
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
             color: #718096;
         }
 
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
+        .status-dropdown {
+            padding: 6px 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
         }
 
-        .status-pending {
-            background: #fef5e7;
-            color: #d68910;
+        /* สีพื้นหลังแถว */
+        tr.status-processing {
+            background-color: #FFF9C4 !important;
         }
 
-        .status-processing {
-            background: #FFF9C4;
-            color: #d68910;
+        tr.status-completed {
+            background-color: #E8F5E9 !important;
         }
 
-        .status-completed {
-            background: #E8F5E9;
-            color: #229954;
+        tr.status-pending {
+            background-color: #FFFFFF !important;
         }
     </style>
 </head>
@@ -335,6 +340,7 @@
                         <option value="รอดำเนินการ">รอดำเนินการ</option>
                         <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
                         <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+                        <option value="รอตรวจสอบ">รอตรวจสอบ</option>
                     </select>
                     <input type="text" id="searchText" placeholder="ค้นหา (ชื่อ, เบอร์โทร, หมายเลขคำร้อง)">
                     <button onclick="applyFilters()">🔍 ค้นหา</button>
@@ -390,7 +396,8 @@
     <script>
         // ⚠️ สำคัญ: เปลี่ยนรหัสผ่านและ URL ที่นี่
         const ADMIN_PASSWORD = 'pea123';
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlmDdmEdKWlQlWuTDIStv04hA5H63RXsDNIdn8OHigv6JE3Z-7qGQC98d0q_E9Rl2-/exec';
+        const DELETE_PASSWORD = 'admin123';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7pTHlmYeB8s49pvi5mimhyXhuK1A_hOXHV86LjJ4KgeLVusVLeHD4HCJu-TJ7Jij3/exec';
         
         let currentTab = 'service';
         let allServiceData = [];
@@ -426,8 +433,9 @@
                 const result = await response.json();
 
                 if (result.status === 'success') {
-                    allServiceData = result.data.serviceRequests || [];
-                    allPaymentData = result.data.paymentRequests || [];
+                    // เรียงลำดับให้รายการใหม่ขึ้นบนสุด (reverse)
+                    allServiceData = (result.data.serviceRequests || []).reverse();
+                    allPaymentData = (result.data.paymentRequests || []).reverse();
                     
                     filteredServiceData = allServiceData;
                     filteredPaymentData = allPaymentData;
@@ -474,10 +482,14 @@
             filteredServiceData.forEach(request => {
                 const row = document.createElement('tr');
                 
-                const statusClass = 
-                    request['สถานะ'] === 'เสร็จสิ้น' ? 'status-completed' :
-                    request['สถานะ'] === 'กำลังดำเนินการ' ? 'status-processing' :
-                    'status-pending';
+                // กำหนด class สำหรับสีพื้นหลัง
+                if (request['สถานะ'] === 'เสร็จสิ้น') {
+                    row.classList.add('status-completed');
+                } else if (request['สถานะ'] === 'กำลังดำเนินการ') {
+                    row.classList.add('status-processing');
+                } else {
+                    row.classList.add('status-pending');
+                }
 
                 row.innerHTML = `
                     <td>${request['วันที่-เวลา']}</td>
@@ -485,10 +497,19 @@
                     <td>${request['ชื่อ-นามสกุล']}</td>
                     <td>${request['เบอร์โทร']}</td>
                     <td>${request['หมายเลขคำร้อง']}</td>
-                    <td><span class="status-badge ${statusClass}">${request['สถานะ']}</span></td>
+                    <td>
+                        <select class="status-dropdown" onchange="changeStatus('service', ${request._rowIndex}, this.value)">
+                            <option value="รอดำเนินการ" ${request['สถานะ'] === 'รอดำเนินการ' ? 'selected' : ''}>รอดำเนินการ</option>
+                            <option value="กำลังดำเนินการ" ${request['สถานะ'] === 'กำลังดำเนินการ' ? 'selected' : ''}>กำลังดำเนินการ</option>
+                            <option value="เสร็จสิ้น" ${request['สถานะ'] === 'เสร็จสิ้น' ? 'selected' : ''}>เสร็จสิ้น</option>
+                        </select>
+                    </td>
                     <td>
                         <button class="action-btn btn-view" onclick="window.open('${request['ลิงก์โฟลเดอร์']}', '_blank')">
-                            ดูไฟล์
+                            📂 ดูไฟล์
+                        </button>
+                        <button class="action-btn btn-delete" onclick="deleteRequest('service', ${request._rowIndex})">
+                            🗑️ ลบ
                         </button>
                     </td>
                 `;
@@ -503,25 +524,86 @@
             filteredPaymentData.forEach(request => {
                 const row = document.createElement('tr');
                 
-                const statusClass = 
-                    request['สถานะ'] === 'เสร็จสิ้น' ? 'status-completed' :
-                    request['สถานะ'] === 'กำลังดำเนินการ' ? 'status-processing' :
-                    'status-pending';
+                // กำหนด class สำหรับสีพื้นหลัง
+                if (request['สถานะ'] === 'เสร็จสิ้น') {
+                    row.classList.add('status-completed');
+                } else {
+                    row.classList.add('status-pending');
+                }
 
                 row.innerHTML = `
                     <td>${request['วันที่-เวลา']}</td>
                     <td>${request['ชื่อ-นามสกุล']}</td>
                     <td>${request['เบอร์โทร']}</td>
                     <td>${request['หมายเลขคำร้อง']}</td>
-                    <td><span class="status-badge ${statusClass}">${request['สถานะ']}</span></td>
+                    <td>
+                        <select class="status-dropdown" onchange="changeStatus('payment', ${request._rowIndex}, this.value)">
+                            <option value="รอตรวจสอบ" ${request['สถานะ'] === 'รอตรวจสอบ' ? 'selected' : ''}>รอตรวจสอบ</option>
+                            <option value="เสร็จสิ้น" ${request['สถานะ'] === 'เสร็จสิ้น' ? 'selected' : ''}>เสร็จสิ้น</option>
+                        </select>
+                    </td>
                     <td>
                         <button class="action-btn btn-view" onclick="window.open('${request['ลิงก์โฟลเดอร์']}', '_blank')">
-                            ดูไฟล์
+                            📂 ดูไฟล์
+                        </button>
+                        <button class="action-btn btn-delete" onclick="deleteRequest('payment', ${request._rowIndex})">
+                            🗑️ ลบ
                         </button>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
+        }
+
+        async function changeStatus(sheetType, rowIndex, newStatus) {
+            try {
+                const url = `${GOOGLE_SCRIPT_URL}?action=updateStatus&password=${ADMIN_PASSWORD}&sheetType=${sheetType}&rowIndex=${rowIndex}&newStatus=${encodeURIComponent(newStatus)}`;
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    // รีโหลดข้อมูล
+                    await loadData();
+                } else {
+                    alert('ไม่สามารถอัปเดตสถานะได้: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                alert('เกิดข้อผิดพลาด: ' + error.message);
+            }
+        }
+
+        async function deleteRequest(sheetType, rowIndex) {
+            const password = prompt('⚠️ กรุณายืนยันการลบ\nใส่รหัสผ่าน:');
+            
+            if (!password) {
+                return; // ยกเลิก
+            }
+
+            if (password !== DELETE_PASSWORD) {
+                alert('❌ รหัสผ่านไม่ถูกต้อง');
+                return;
+            }
+
+            if (!confirm('❌ คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?\nการลบจะไม่สามารถกู้คืนได้!')) {
+                return;
+            }
+
+            try {
+                const url = `${GOOGLE_SCRIPT_URL}?action=deleteRow&password=${ADMIN_PASSWORD}&deletePassword=${password}&sheetType=${sheetType}&rowIndex=${rowIndex}`;
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    alert('✅ ลบรายการเรียบร้อย');
+                    await loadData();
+                } else {
+                    alert('ไม่สามารถลบได้: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error deleting:', error);
+                alert('เกิดข้อผิดพลาด: ' + error.message);
+            }
         }
 
         function switchTab(tab) {
@@ -558,8 +640,6 @@
                         match = false;
                     }
                 }
-
-                // Date filtering logic here if needed
 
                 return match;
             });
