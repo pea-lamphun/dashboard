@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - ระบบจัดการคำร้อง PEA ลำพูน</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Sarabun', 'Noto Sans Thai', Arial, sans-serif;
+            background: #f5f7fa;
+        }
+
+        /* Login Screen */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #6B2C91 0%, #4A1C6C 100%);
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .login-box img {
+            width: 100px;
+            display: block;
+            margin: 0 auto 20px;
+        }
+
+        .login-box h2 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 30px;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #6B2C91 0%, #4A1C6C 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .login-box button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(107, 44, 145, 0.4);
+        }
+
+        .error-message {
+            color: #e53e3e;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+
+        /* Dashboard */
+        .dashboard {
+            display: none;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header img {
+            width: 60px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #2d3748;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background: #e53e3e;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .stat-card h3 {
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .filters h3 {
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .filter-row input,
+        .filter-row select {
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .filter-row button {
+            padding: 10px 20px;
+            background: #6B2C91;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 16px;
+            color: #718096;
+        }
+
+        .tab.active {
+            background: #6B2C91;
+            color: white;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f7fafc;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #2d3748;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        tr:hover {
+            background: #f7fafc;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            margin: 2px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-view {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+
+        .status-dropdown {
+            padding: 6px 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        /* สีพื้นหลังแถว */
+        tr.status-processing {
+            background-color: #FFF9C4 !important;
+        }
+
+        tr.status-completed {
+            background-color: #E8F5E9 !important;
+        }
+
+        tr.status-pending {
+            background-color: #FFFFFF !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-box">
+            <img src="https://i.ibb.co/svLGKgCX/logo-3.png" alt="PEA Logo">
+            <h2>เข้าสู่ระบบ Dashboard</h2>
+            <input type="password" id="passwordInput" placeholder="รหัสผ่าน" onkeypress="if(event.key==='Enter') login()">
+            <button onclick="login()">เข้าสู่ระบบ</button>
+            <div class="error-message" id="errorMessage">รหัสผ่านไม่ถูกต้อง</div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="dashboard">
+        <div class="header">
+            <div class="header-left">
+                <img src="https://i.ibb.co/svLGKgCX/logo-3.png" alt="PEA Logo">
+                <h1>ระบบจัดการคำร้อง PEA ลำพูน</h1>
+            </div>
+            <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
+        </div>
+
+        <div class="container">
+            <!-- Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>คำร้องทั้งหมด</h3>
+                    <div class="number" id="totalRequests">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>รอดำเนินการ</h3>
+                    <div class="number" id="pendingRequests">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>กำลังดำเนินการ</h3>
+                    <div class="number" id="processingRequests">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>เสร็จสิ้น</h3>
+                    <div class="number" id="completedRequests">0</div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters">
+                <h3>🔍 กรองข้อมูล</h3>
+                <div class="filter-row">
+                    <input type="date" id="startDate" placeholder="วันที่เริ่มต้น">
+                    <input type="date" id="endDate" placeholder="วันที่สิ้นสุด">
+                    <select id="statusFilter">
+                        <option value="">ทุกสถานะ</option>
+                        <option value="รอดำเนินการ">รอดำเนินการ</option>
+                        <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
+                        <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+                        <option value="รอตรวจสอบ">รอตรวจสอบ</option>
+                    </select>
+                    <input type="text" id="searchText" placeholder="ค้นหา (ชื่อ, เบอร์โทร, หมายเลขคำร้อง)">
+                    <button onclick="applyFilters()">🔍 ค้นหา</button>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('service')">คำร้องบริการ</button>
+                <button class="tab" onclick="switchTab('payment')">หลักฐานการชำระเงิน</button>
+            </div>
+
+            <!-- Table -->
+            <div class="table-container">
+                <div id="loadingMessage" class="loading">กำลังโหลดข้อมูล...</div>
+                <div id="serviceTable" style="display:none;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>วันที่-เวลา</th>
+                                <th>ประเภท</th>
+                                <th>ชื่อ-นามสกุล</th>
+                                <th>เบอร์โทร</th>
+                                <th>หมายเลขคำร้อง</th>
+                                <th>สถานะ</th>
+                                <th>การจัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="serviceTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <div id="paymentTable" style="display:none;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>วันที่-เวลา</th>
+                                <th>ชื่อ-นามสกุล</th>
+                                <th>เบอร์โทร</th>
+                                <th>หมายเลขคำร้อง</th>
+                                <th>สถานะ</th>
+                                <th>การจัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ⚠️ สำคัญ: เปลี่ยนรหัสผ่านและ URL ที่นี่
+        const ADMIN_PASSWORD = 'pea123';
+        const DELETE_PASSWORD = 'admin123';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwsxI-3YqXUFfnsvM4eYvBZUNzgs1wcUHBK8aot3LVLeQeiTxthRliJ9c17TJNQPUht/exec';
+        
+        let currentTab = 'service';
+        let allServiceData = [];
+        let allPaymentData = [];
+        let filteredServiceData = [];
+        let filteredPaymentData = [];
+
+        function login() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === ADMIN_PASSWORD) {
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                loadData();
+            } else {
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        }
+
+        function logout() {
+            document.getElementById('loginContainer').style.display = 'flex';
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('passwordInput').value = '';
+        }
+
+        async function loadData() {
+            try {
+                document.getElementById('loadingMessage').style.display = 'block';
+                document.getElementById('serviceTable').style.display = 'none';
+                document.getElementById('paymentTable').style.display = 'none';
+
+                const url = `${GOOGLE_SCRIPT_URL}?action=getData&password=${ADMIN_PASSWORD}`;
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    // เรียงลำดับให้รายการใหม่ขึ้นบนสุด (reverse)
+                    allServiceData = (result.data.serviceRequests || []).reverse();
+                    allPaymentData = (result.data.paymentRequests || []).reverse();
+                    
+                    filteredServiceData = allServiceData;
+                    filteredPaymentData = allPaymentData;
+                    
+                    updateStats();
+                    displayData();
+                    
+                    document.getElementById('loadingMessage').style.display = 'none';
+                    if (currentTab === 'service') {
+                        document.getElementById('serviceTable').style.display = 'block';
+                    } else {
+                        document.getElementById('paymentTable').style.display = 'block';
+                    }
+                } else {
+                    alert('ไม่สามารถโหลดข้อมูลได้: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                alert('เกิดข้อผิดพลาด: ' + error.message);
+            }
+        }
+
+        function updateStats() {
+            const total = allServiceData.length;
+            const pending = allServiceData.filter(r => r['สถานะ'] === 'รอดำเนินการ').length;
+            const processing = allServiceData.filter(r => r['สถานะ'] === 'กำลังดำเนินการ').length;
+            const completed = allServiceData.filter(r => r['สถานะ'] === 'เสร็จสิ้น').length;
+
+            document.getElementById('totalRequests').textContent = total;
+            document.getElementById('pendingRequests').textContent = pending;
+            document.getElementById('processingRequests').textContent = processing;
+            document.getElementById('completedRequests').textContent = completed;
+        }
+
+        function displayData() {
+            displayServiceRequests();
+            displayPaymentRequests();
+        }
+
+        function displayServiceRequests() {
+            const tbody = document.getElementById('serviceTableBody');
+            tbody.innerHTML = '';
+
+            filteredServiceData.forEach(request => {
+                const row = document.createElement('tr');
+                
+                // กำหนด class สำหรับสีพื้นหลัง
+                if (request['สถานะ'] === 'เสร็จสิ้น') {
+                    row.classList.add('status-completed');
+                } else if (request['สถานะ'] === 'กำลังดำเนินการ') {
+                    row.classList.add('status-processing');
+                } else {
+                    row.classList.add('status-pending');
+                }
+
+                row.innerHTML = `
+                    <td>${request['วันที่-เวลา']}</td>
+                    <td>${request['ประเภทคำร้อง']}</td>
+                    <td>${request['ชื่อ-นามสกุล']}</td>
+                    <td>${request['เบอร์โทร']}</td>
+                    <td>${request['หมายเลขคำร้อง']}</td>
+                    <td>
+                        <select class="status-dropdown" onchange="changeStatus('service', ${request._rowIndex}, this.value)">
+                            <option value="รอดำเนินการ" ${request['สถานะ'] === 'รอดำเนินการ' ? 'selected' : ''}>รอดำเนินการ</option>
+                            <option value="กำลังดำเนินการ" ${request['สถานะ'] === 'กำลังดำเนินการ' ? 'selected' : ''}>กำลังดำเนินการ</option>
+                            <option value="เสร็จสิ้น" ${request['สถานะ'] === 'เสร็จสิ้น' ? 'selected' : ''}>เสร็จสิ้น</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button class="action-btn btn-view" onclick="window.open('${request['ลิงก์โฟลเดอร์']}', '_blank')">
+                            📂 ดูไฟล์
+                        </button>
+                        <button class="action-btn btn-delete" onclick="deleteRequest('service', ${request._rowIndex})">
+                            🗑️ ลบ
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function displayPaymentRequests() {
+            const tbody = document.getElementById('paymentTableBody');
+            tbody.innerHTML = '';
+
+            filteredPaymentData.forEach(request => {
+                const row = document.createElement('tr');
+                
+                // กำหนด class สำหรับสีพื้นหลัง
+                if (request['สถานะ'] === 'เสร็จสิ้น') {
+                    row.classList.add('status-completed');
+                } else {
+                    row.classList.add('status-pending');
+                }
+
+                row.innerHTML = `
+                    <td>${request['วันที่-เวลา']}</td>
+                    <td>${request['ชื่อ-นามสกุล']}</td>
+                    <td>${request['เบอร์โทร']}</td>
+                    <td>${request['หมายเลขคำร้อง']}</td>
+                    <td>
+                        <select class="status-dropdown" onchange="changeStatus('payment', ${request._rowIndex}, this.value)">
+                            <option value="รอตรวจสอบ" ${request['สถานะ'] === 'รอตรวจสอบ' ? 'selected' : ''}>รอตรวจสอบ</option>
+                            <option value="เสร็จสิ้น" ${request['สถานะ'] === 'เสร็จสิ้น' ? 'selected' : ''}>เสร็จสิ้น</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button class="action-btn btn-view" onclick="window.open('${request['ลิงก์โฟลเดอร์']}', '_blank')">
+                            📂 ดูไฟล์
+                        </button>
+                        <button class="action-btn btn-delete" onclick="deleteRequest('payment', ${request._rowIndex})">
+                            🗑️ ลบ
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function changeStatus(sheetType, rowIndex, newStatus) {
+            try {
+                const url = `${GOOGLE_SCRIPT_URL}?action=updateStatus&password=${ADMIN_PASSWORD}&sheetType=${sheetType}&rowIndex=${rowIndex}&newStatus=${encodeURIComponent(newStatus)}`;
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    // รีโหลดข้อมูล
+                    await loadData();
+                } else {
+                    alert('ไม่สามารถอัปเดตสถานะได้: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                alert('เกิดข้อผิดพลาด: ' + error.message);
+            }
+        }
+
+        async function deleteRequest(sheetType, rowIndex) {
+            const password = prompt('⚠️ กรุณายืนยันการลบ\nใส่รหัสผ่าน:');
+            
+            if (!password) {
+                return; // ยกเลิก
+            }
+
+            if (password !== DELETE_PASSWORD) {
+                alert('❌ รหัสผ่านไม่ถูกต้อง');
+                return;
+            }
+
+            if (!confirm('❌ คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?\nการลบจะไม่สามารถกู้คืนได้!')) {
+                return;
+            }
+
+            try {
+                const url = `${GOOGLE_SCRIPT_URL}?action=deleteRow&password=${ADMIN_PASSWORD}&deletePassword=${password}&sheetType=${sheetType}&rowIndex=${rowIndex}`;
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    alert('✅ ลบรายการเรียบร้อย');
+                    await loadData();
+                } else {
+                    alert('ไม่สามารถลบได้: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error deleting:', error);
+                alert('เกิดข้อผิดพลาด: ' + error.message);
+            }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (tab === 'service') {
+                document.getElementById('serviceTable').style.display = 'block';
+                document.getElementById('paymentTable').style.display = 'none';
+            } else {
+                document.getElementById('serviceTable').style.display = 'none';
+                document.getElementById('paymentTable').style.display = 'block';
+            }
+        }
+
+        function applyFilters() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const status = document.getElementById('statusFilter').value;
+            const searchText = document.getElementById('searchText').value.toLowerCase();
+
+            filteredServiceData = allServiceData.filter(request => {
+                let match = true;
+
+                if (status && request['สถานะ'] !== status) {
+                    match = false;
+                }
+
+                if (searchText) {
+                    const searchableText = `${request['ชื่อ-นามสกุล']} ${request['เบอร์โทร']} ${request['หมายเลขคำร้อง']}`.toLowerCase();
+                    if (!searchableText.includes(searchText)) {
+                        match = false;
+                    }
+                }
+
+                return match;
+            });
+
+            filteredPaymentData = allPaymentData.filter(request => {
+                let match = true;
+
+                if (status && request['สถานะ'] !== status) {
+                    match = false;
+                }
+
+                if (searchText) {
+                    const searchableText = `${request['ชื่อ-นามสกุล']} ${request['เบอร์โทร']} ${request['หมายเลขคำร้อง']}`.toLowerCase();
+                    if (!searchableText.includes(searchText)) {
+                        match = false;
+                    }
+                }
+
+                return match;
+            });
+
+            displayData();
+        }
+    </script>
+</body>
+</html>
